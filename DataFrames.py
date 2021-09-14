@@ -31,15 +31,12 @@ start_time = time()
 # ===== Adjusting the DataFrame ================
 # ==============================================
 print('Adjusting the DataFrames')
-
+print('IBGE')
 print('Área')
 df_area = pd.read_excel(read_path + r'Area_2020.xls')
 
 df_area = df_area.drop(columns={'ID', 'CD_GCUF', 'NM_UF', 'NM_MUN_2020'}).rename(columns={'NM_UF_SIGLA': 'UF', 'CD_GCMUN': 'cod_mun', 'AR_MUN_2020': 'area_mun'})
 df_area['cod_mun'] = df_area['cod_mun'].dropna().astype(int).astype(str).str[:-1]
-
-tic = time()
-print(str(round((start_time - tic) / 60, 1)) + ' minutes.')
 
 print('PIB')
 df_pib = pd.read_excel(read_path + r'PIB_2010_2018.xlsx')
@@ -47,24 +44,16 @@ df_pib = pd.read_excel(read_path + r'PIB_2010_2018.xlsx')
 cols = {'Sigla da Unidade da Federação': 'UF',
         'Código do Município': 'cod_mun',
         'Nome do Município': 'mun',
-        'Região Metropolitana': 'RM',
         'Código da Microrregião': 'cod_mic',
         'Nome da Microrregião': 'mic',
-        'Amazônia Legal': 'amazonia_legal',
+        'Região Metropolitana': 'RM',
         'Produto Interno Bruto, \na preços correntes\n(R$ 1.000)': 'pib',
         'Produto Interno Bruto per capita, \na preços correntes\n(R$ 1,00)': 'pib_per_capita',
         'Atividade com maior valor adicionado bruto': 'atividade'}
-
+# TODO CRIAR DUMMIES DE ATIVIDADE
 df_pib = df_pib[df_pib['Ano'] >= 2018]
 df_pib = df_pib.drop(df_pib.columns.difference(cols), axis=1)
 df_pib = df_pib.rename(columns=cols)
-
-df_pib['75-50_pib'] = np.where((df_pib['pib_per_capita'] < np.percentile(df_pib['pib_per_capita'], 75)) & (df_pib['pib_per_capita'] >= np.percentile(df_pib['pib_per_capita'], 50)), 1, 0)
-df_pib['50-25_pib'] = np.where((df_pib['pib_per_capita'] < np.percentile(df_pib['pib_per_capita'], 50)) & (df_pib['pib_per_capita'] >= np.percentile(df_pib['pib_per_capita'], 25)), 1, 0)
-df_pib['75-25_pib'] = np.where((df_pib['pib_per_capita'] < np.percentile(df_pib['pib_per_capita'], 75)) & (df_pib['pib_per_capita'] >= np.percentile(df_pib['pib_per_capita'], 25)), 1, 0)
-df_pib['75_pib'] = np.where((df_pib['pib_per_capita'] >= np.percentile(df_pib['pib_per_capita'], 75)), 1, 0)
-df_pib['25_pib'] = np.where((df_pib['pib_per_capita'] < np.percentile(df_pib['pib_per_capita'], 25)), 1, 0) # 25% mais baixos
-df_pib['mediana_pib'] = np.where((df_pib['pib_per_capita'] < df_pib['pib_per_capita'].median()), 1, 0) # Abaixo da Mediana
 
 df_pib['RM'] = df_pib['RM'].str[:2]
 df_pib['Ag'] = np.where((df_pib['RM'] == 'Ag'), 1, 0)
@@ -76,8 +65,9 @@ df_pib['populacao'] = ((df_pib['pib'] * 1000) / df_pib['pib_per_capita']).astype
 df_pib = df_pib.drop(columns=['Ag', 'RI'])
 
 toc = time()
-print(str(round((toc - tic) / 60, 1)) + ' minutes.')
+print(str(round((start_time - toc) / 60, 1)) + ' minutes.')
 
+print('Censo 2010')
 print('Renda')
 df_renda = pd.read_excel(censo_path + r'Renda Dom. per capita.xlsx')
 
@@ -94,68 +84,98 @@ df_renda = df_renda[df_renda['renda_per_capita'] != '...']
 
 df_renda['mediana_renda'] = np.where((df_renda['renda_per_capita'] < df_renda['renda_per_capita'].median()), 1, 0) # Abaixo da Mediana
 
-tic = time()
-print(str(round((tic - toc) / 60, 1)) + ' minutes.')
-
 print('Escolaridade')
-df_escolaridade = pd.read_excel(censo_path + r'Escolaridade.xlsx')
+df_escolaridade = pd.read_excel(censo_path + r'Escolaridade.xlsx', sheet_name='%')
 
 df_escolaridade['cod_mun'] = df_escolaridade['"Município";"Sem instrução/1º ciclo fundamental incompleto";"1º ciclo fundamental completo/2º ciclo incompleto";"2º ciclo fundamental completo ou mais";"Não determinada";"Total"'].str[1:7]
-df_escolaridade[['mun', 'fundamental_inc', 'fundamental_comp/em_inc', 'em_comp', 'nao_determinado', 'total']] = df_escolaridade['"Município";"Sem instrução/1º ciclo fundamental incompleto";"1º ciclo fundamental completo/2º ciclo incompleto";"2º ciclo fundamental completo ou mais";"Não determinada";"Total"'].str.split(pat=";", expand=True)
+df_escolaridade[['mun', 'fundamental_inc', 'em_inc', 'em_comp', 'escola_na', 'escola_total']] = df_escolaridade['"Município";"Sem instrução/1º ciclo fundamental incompleto";"1º ciclo fundamental completo/2º ciclo incompleto";"2º ciclo fundamental completo ou mais";"Não determinada";"Total"'].str.split(pat=";", expand=True)
 df_escolaridade = df_escolaridade.iloc[:-2]
 df_escolaridade['filtro'] = df_escolaridade['cod_mun'].str[2:]
 df_escolaridade = df_escolaridade[df_escolaridade.filtro != '0000']
 df_escolaridade = df_escolaridade.drop(columns=['filtro', '"Município";"Sem instrução/1º ciclo fundamental incompleto";"1º ciclo fundamental completo/2º ciclo incompleto";"2º ciclo fundamental completo ou mais";"Não determinada";"Total"', 'mun'])
-for col in ['fundamental_inc', 'fundamental_comp/em_inc', 'em_comp', 'nao_determinado', 'total']:
+for col in ['fundamental_inc', 'em_inc', 'em_comp', 'escola_na', 'escola_total']:
     df_escolaridade[col] = [x.replace(',', '.') for x in df_escolaridade[col]]
     df_escolaridade[col] = df_escolaridade[col].replace({'-': np.nan}).astype(float)
 
-toc = time()
-print(str(round((toc - tic) / 60, 1)) + ' minutes.')
+print('Coleta de Lixo')
+df_lixo = pd.read_excel(censo_path + r'Coleta de Lixo.xlsx', sheet_name='%')
+
+df_lixo['cod_mun'] = df_lixo['"Município";"Coletado por serviço de limpeza";"Coletado por caçamba de serviço de limpeza";"Queimado (na propriedade)";"Enterrado (na propriedade)";"Jogado em terreno baldio ou logradouro";"Jogado em rio, lago ou mar";"Outro destino";"Total"'].str[1:7]
+df_lixo[['mun', 'limpeza', 'cacamba', 'queimado', 'enterrado', 'terreno_baldio', 'lixo_rio', 'lixo_outro', 'lixo_total']] = df_lixo['"Município";"Coletado por serviço de limpeza";"Coletado por caçamba de serviço de limpeza";"Queimado (na propriedade)";"Enterrado (na propriedade)";"Jogado em terreno baldio ou logradouro";"Jogado em rio, lago ou mar";"Outro destino";"Total"'].str.split(pat=";", expand=True)
+df_lixo = df_lixo.iloc[:-2]
+df_lixo['filtro'] = df_lixo['cod_mun'].str[2:]
+df_lixo = df_lixo[df_lixo.filtro != '0000']
+df_lixo = df_lixo.drop(columns={'filtro', 'mun', '"Município";"Coletado por serviço de limpeza";"Coletado por caçamba de serviço de limpeza";"Queimado (na propriedade)";"Enterrado (na propriedade)";"Jogado em terreno baldio ou logradouro";"Jogado em rio, lago ou mar";"Outro destino";"Total"'})
+for col in ['limpeza', 'cacamba', 'queimado', 'enterrado', 'terreno_baldio', 'lixo_rio', 'lixo_outro', 'lixo_total']:
+    df_lixo[col] = [x.replace(',', '.') for x in df_lixo[col]]
+    df_lixo[col] = df_lixo[col].replace({'-': np.nan}).astype(float)
+df_lixo = df_lixo.dropna(how='all')
+
+print('Abastecimento de Agua')
+df_agua = pd.read_excel(censo_path + r'Abastecimento de Agua.xlsx', sheet_name='%')
+
+df_agua['cod_mun'] = df_agua['"Município";"Rede geral - sem informação de canalização";"Poço ou nascente - sem informação de canalização";"Outra forma - Poço ou nascente fora da propriedade";"Outra forma - Carro-pipa";"Outra forma - Água da chuva armazenada em cisterna";"Outra forma - Água da chuva armazenada outra forma";"Outra forma - Rio, açude, lago ou igarapé";"Outra forma - Poço ou nascente na aldeia";"Outra forma - Poço ou nascente fora da aldeia";"Outra forma - Outra";"Total"'].str[1:7]
+df_agua[['mun', 'agua_geral', 'poco', 'poco_fora', 'carro_pipa', 'chuva_cisterna', 'chuva_outra', 'agua_rio', 'poco_aldeia', 'poco_fora_aldeia', 'agua_outra', 'agua_total']] = df_agua['"Município";"Rede geral - sem informação de canalização";"Poço ou nascente - sem informação de canalização";"Outra forma - Poço ou nascente fora da propriedade";"Outra forma - Carro-pipa";"Outra forma - Água da chuva armazenada em cisterna";"Outra forma - Água da chuva armazenada outra forma";"Outra forma - Rio, açude, lago ou igarapé";"Outra forma - Poço ou nascente na aldeia";"Outra forma - Poço ou nascente fora da aldeia";"Outra forma - Outra";"Total"'].str.split(pat=";", expand=True)
+df_agua = df_agua.iloc[:-2]
+df_agua['filtro'] = df_agua['cod_mun'].str[2:]
+df_agua = df_agua[df_agua.filtro != '0000']
+df_agua = df_agua.drop(columns={'filtro', 'mun', '"Município";"Rede geral - sem informação de canalização";"Poço ou nascente - sem informação de canalização";"Outra forma - Poço ou nascente fora da propriedade";"Outra forma - Carro-pipa";"Outra forma - Água da chuva armazenada em cisterna";"Outra forma - Água da chuva armazenada outra forma";"Outra forma - Rio, açude, lago ou igarapé";"Outra forma - Poço ou nascente na aldeia";"Outra forma - Poço ou nascente fora da aldeia";"Outra forma - Outra";"Total"'})
+for col in ['agua_geral', 'poco', 'poco_fora', 'carro_pipa', 'chuva_cisterna', 'chuva_outra', 'agua_rio', 'poco_aldeia', 'poco_fora_aldeia', 'agua_outra', 'agua_total']:
+    df_agua[col] = [x.replace(',', '.') for x in df_agua[col]]
+    df_agua[col] = df_agua[col].replace({'-': np.nan}).astype(float)
+df_agua = df_agua.dropna(how='all')
+
+print('Esgoto')
+df_esgoto = pd.read_excel(censo_path + r'Esgoto.xlsx', sheet_name='%')
+
+df_esgoto['cod_mun'] = df_esgoto['"Município";"Rede geral de esgoto ou pluvial";"Fossa séptica";"Fossa rudimendar";"Vala";"Rio, lago ou mar";"Outro escoadouro";"Não tem instalação sanitária";"Total"'].str[1:7]
+df_esgoto[['mun', 'esgoto_geral', 'fossa_septica', 'fossa_rudimentar', 'vala', 'esgoto_rio', 'esgoto_outro', 'esgoto_sem', 'esgoto_total']] = df_esgoto['"Município";"Rede geral de esgoto ou pluvial";"Fossa séptica";"Fossa rudimendar";"Vala";"Rio, lago ou mar";"Outro escoadouro";"Não tem instalação sanitária";"Total"'].str.split(pat=";", expand=True)
+df_esgoto = df_esgoto.iloc[:-2]
+df_esgoto['filtro'] = df_esgoto['cod_mun'].str[2:]
+df_esgoto = df_esgoto[df_esgoto.filtro != '0000']
+df_esgoto = df_esgoto.drop(columns={'filtro', 'mun', '"Município";"Rede geral de esgoto ou pluvial";"Fossa séptica";"Fossa rudimendar";"Vala";"Rio, lago ou mar";"Outro escoadouro";"Não tem instalação sanitária";"Total"'})
+for col in ['esgoto_geral', 'fossa_septica', 'fossa_rudimentar', 'vala', 'esgoto_rio', 'esgoto_outro', 'esgoto_sem', 'esgoto_total']:
+    df_esgoto[col] = [x.replace(',', '.') for x in df_esgoto[col]]
+    df_esgoto[col] = df_esgoto[col].replace({'-': np.nan}).astype(float)
+df_esgoto = df_esgoto.dropna(how='all')
 
 print('Idosos')
-df_idosos = pd.read_excel(censo_path + r'Idosos Dom. Parente.xlsx')
+df_idosos = pd.read_excel(censo_path + r'Idosos Dom. Parente.xlsx', sheet_name='%')
 
 df_idosos['cod_mun'] = df_idosos['"Município";"%idosos resid como out parente"'].str[1:7]
-df_idosos[['mun', 'idosos_p']] = df_idosos['"Município";"%idosos resid como out parente"'].str.split(pat=";", expand=True)
+df_idosos[['mun', 'idosos']] = df_idosos['"Município";"%idosos resid como out parente"'].str.split(pat=";", expand=True)
 df_idosos['mun'] = df_idosos['mun'].str[8:-1]
 df_idosos = df_idosos.iloc[:-1]
 df_idosos['filtro'] = df_idosos['cod_mun'].str[2:]
 df_idosos = df_idosos[df_idosos.filtro != '0000']
 df_idosos = df_idosos.drop(columns=['filtro', '"Município";"%idosos resid como out parente"', 'mun'])
-df_idosos['idosos_p'] = [x.replace(',', '.') for x in df_idosos['idosos_p']]
-
-tic = time()
-print(str(round((tic - toc) / 60, 1)) + ' minutes.')
+df_idosos['idosos'] = [x.replace(',', '.') for x in df_idosos['idosos']]
 
 print('% da populacao renda abaixo de 1/2 Salario Minimo')
-df_05_sm = pd.read_excel(censo_path + r'Pop. Renda - 0.5 SM.xlsx')
+df_05_sm = pd.read_excel(censo_path + r'Pop. Renda - 0.5 SM.xlsx', sheet_name='%')
 
 df_05_sm['cod_mun'] = df_05_sm['"Município";"% população com renda < 1/2 SM"'].str[1:7]
-df_05_sm[['mun', 'pop_0.5_sm']] = df_05_sm['"Município";"% população com renda < 1/2 SM"'].str.split(pat=";", expand=True)
+df_05_sm[['mun', 'pop_05_sm']] = df_05_sm['"Município";"% população com renda < 1/2 SM"'].str.split(pat=";", expand=True)
 df_05_sm['mun'] = df_05_sm['mun'].str[8:-1]
 df_05_sm = df_05_sm.iloc[:-1]
 df_05_sm['filtro'] = df_05_sm['cod_mun'].str[2:]
 df_05_sm = df_05_sm[df_05_sm.filtro != '0000']
 df_05_sm = df_05_sm.drop(columns=['filtro', '"Município";"% população com renda < 1/2 SM"', 'mun'])
-df_05_sm['pop_0.5_sm'] = [x.replace(',', '.') for x in df_05_sm['pop_0.5_sm']]
-df_05_sm['pop_0.5_sm'] = df_05_sm['pop_0.5_sm'].replace({'...': np.nan}).astype(float)
-
-toc = time()
-print(str(round((toc - tic) / 60, 1)) + ' minutes.')
+df_05_sm['pop_05_sm'] = [x.replace(',', '.') for x in df_05_sm['pop_05_sm']]
+df_05_sm['pop_05_sm'] = df_05_sm['pop_05_sm'].replace({'...': np.nan}).astype(float)
 
 print('% da populacao renda abaixo de 1/4 Salario Minimo')
-df_025_sm = pd.read_excel(censo_path + r'Pop. Renda - 0.25 SM.xlsx')
+df_025_sm = pd.read_excel(censo_path + r'Pop. Renda - 0.25 SM.xlsx', sheet_name='%')
 
 df_025_sm['cod_mun'] = df_025_sm['"Município";"% população com renda < 1/4 SM"'].str[1:7]
-df_025_sm[['mun', 'pop_0.25_sm']] = df_025_sm['"Município";"% população com renda < 1/4 SM"'].str.split(pat=";", expand=True)
+df_025_sm[['mun', 'pop_025_sm']] = df_025_sm['"Município";"% população com renda < 1/4 SM"'].str.split(pat=";", expand=True)
 df_025_sm['mun'] = df_025_sm['mun'].str[8:-1]
 df_025_sm = df_025_sm.iloc[:-1]
 df_025_sm['filtro'] = df_025_sm['cod_mun'].str[2:]
 df_025_sm = df_025_sm[df_025_sm.filtro != '0000']
 df_025_sm = df_025_sm.drop(columns=['filtro', '"Município";"% população com renda < 1/4 SM"', 'mun'])
-df_025_sm['pop_0.25_sm'] = [x.replace(',', '.') for x in df_025_sm['pop_0.25_sm']]
-df_025_sm['pop_0.25_sm'] = df_025_sm['pop_0.25_sm'].replace({'...': np.nan}).astype(float)
+df_025_sm['pop_025_sm'] = [x.replace(',', '.') for x in df_025_sm['pop_025_sm']]
+df_025_sm['pop_025_sm'] = df_025_sm['pop_025_sm'].replace({'...': np.nan}).astype(float)
 
 tic = time()
 print(str(round((tic - toc) / 60, 1)) + ' minutes.')
@@ -602,10 +622,13 @@ df = df.rename(columns={0: 'cod_mun', 'level_1': 'mes'})
 
 df = df.merge(df_pib, on='cod_mun')
 df = df.merge(df_renda, on='cod_mun')
+df = df.merge(df_escolaridade, on='cod_mun')
+df = df.merge(df_esgoto, on='cod_mun')
+df = df.merge(df_agua, on='cod_mun')
+df = df.merge(df_lixo, on='cod_mun')
 df = df.merge(df_idosos, on='cod_mun')
 df = df.merge(df_05_sm, on='cod_mun')
 df = df.merge(df_025_sm, on='cod_mun')
-df = df.merge(df_escolaridade, on='cod_mun')
 df = df.merge(df_area, on=['cod_mun', 'UF'], how='outer')
 df['mun'] = df['mun'].astype(str).str.lower().apply(unidecode)
 
@@ -636,31 +659,8 @@ writer.close()
 # TODO CHECAR OBITOS SUS JULHO
 # TODO CHECAR RDD OR EVENT STUDY
 
-df_4 = df.loc[df['75_pib'] == 1]
-df_1 = df.loc[df['25_pib'] == 1]
-df_3 = df.loc[df['75-50_pib'] == 1]
-df_2 = df.loc[df['50-25_pib'] == 1]
-df_6 = df.loc[df['75-25_pib'] == 1]
-df_abaixo = df.loc[df['mediana_pib'] == 1]
-
-cols = ['SRAG_Casos', 'SRAG_Óbitos', 'SRAG_UTI', 'SUS_Ób_Int','SUS_Ób_Res', 'SUS_Int_Int', 'SUS_Int_Res', 'CONASS',
-        'SRAG_Casos_1mm', 'SRAG_Óbitos_1mm', 'SRAG_UTI_1mm', 'SUS_Ób_Int_1mm', 'SUS_Ób_Res_1mm', 'SUS_Int_Int_1mm', 'SUS_Int_Res_1mm', 'CONASS_1mm']
-
-df_6 = df_6.groupby(['mes'])[cols].mean()
-df_4 = df_4.groupby(['mes'])[cols].mean()
-df_3 = df_3.groupby(['mes'])[cols].mean()
-df_2 = df_2.groupby(['mes'])[cols].mean()
-df_1 = df_1.groupby(['mes'])[cols].mean()
-df_abaixo = df_abaixo.groupby(['mes'])[cols].mean()
-
 writer = pd.ExcelWriter(save_path + r'Analysis & Charts.xlsx')
 df.to_excel(writer, sheet_name='Full')
-df_6.to_excel(writer, sheet_name='75%-25%')
-df_4.to_excel(writer, sheet_name='75%+')
-df_3.to_excel(writer, sheet_name='75%-50%')
-df_2.to_excel(writer, sheet_name='50%-25%')
-df_1.to_excel(writer, sheet_name='25%-')
-df_abaixo.to_excel(writer, sheet_name='Mediana-')
 writer.close()
 
 tic = time()

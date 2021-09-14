@@ -12,7 +12,9 @@ print('Importing Libraries')
 import pandas as pd
 import numpy as np
 from time import time
+import matplotlib.pyplot as plt
 from statsmodels.formula.api import ols, poisson
+import seaborn as sns
 
 # =================================
 # ===== Parameters ================
@@ -40,16 +42,28 @@ df['mes'] = df.index
 print(df.columns)
 
 print('Final DataFrame')
-df_final = df[['mes', 'UF', 'cod_mic', 'mic', 'cod_mun', 'mun', 'RM', 'amazonia_legal', 'pib', 'pib_per_capita', 'renda_per_capita', 'area_mun',
-               'Leitos', 'SRAG_Casos', 'SRAG_Óbitos', 'SRAG_UTI', 'SUS_Ób_Int','SUS_Ób_Res', 'SUS_Int_Int', 'SUS_Int_Res',  'CONASS',
-               'idosos_p', 'pop_0.5_sm', 'pop_0.25_sm', 'fundamental_inc', 'fundamental_comp/em_inc', 'em_comp', 'nao_determinado', 'total', 'populacao']]
+df_final = df[['mes', 'UF', 'cod_mic', 'mic', 'cod_mun', 'mun', 'RM', 'pib', 'pib_per_capita', 'renda_per_capita', 'area_mun', 'populacao',
+               'Leitos', 'SRAG_Casos', 'SRAG_Óbitos', 'SRAG_UTI', 'SUS_Ób_Int', 'SUS_Ób_Res', 'SUS_Int_Int', 'SUS_Int_Res', 'CONASS',
+               'idosos', 'pop_05_sm', 'pop_025_sm', 'fundamental_inc', 'em_inc', 'em_comp', 'escola_na', 'esgoto_geral', 'fossa_septica',
+               'fossa_rudimentar', 'vala', 'esgoto_rio', 'esgoto_outro', 'esgoto_sem', 'agua_geral', 'poco', 'poco_fora', 'carro_pipa',
+               'chuva_cisterna', 'chuva_outra', 'agua_rio', 'poco_aldeia', 'poco_fora_aldeia', 'agua_outra', 'limpeza', 'cacamba', 'queimado',
+               'enterrado', 'terreno_baldio', 'lixo_rio', 'lixo_outro']]
 
 df_final['mediana_pib'] = np.where((df_final['pib_per_capita'] < df_final['pib_per_capita'].median()), 1, 0)
 df_final['mediana_renda'] = np.where((df_final['renda_per_capita'] < df_final['renda_per_capita'].median()), 1, 0)
 
-df_final['em_inc'] = df_final['fundamental_comp/em_inc']
-df_final['pop_05_sm'] = df_final['pop_0.5_sm']
-df_final['pop_025_sm'] = df_final['pop_0.25_sm']
+writer = pd.ExcelWriter(save_path + r'Analysis - Stata.xlsx')
+df_final.to_excel(writer, sheet_name='Full')
+writer.close()
+
+print('Regressores')
+for col in ['SRAG_Casos', 'SRAG_UTI', 'SRAG_Óbitos', 'SUS_Ób_Int', 'SUS_Ób_Res', 'SUS_Int_Int', 'SUS_Int_Res', 'CONASS']:
+    bins=[df_final[f'{col}'].std()/2,  df_final[f'{col}'].std(), df_final[f'{col}'].std()*2, df_final[f'{col}'].std()*3, df_final[f'{col}'].std()*4, df_final[f'{col}'].std()*5,
+          df_final[f'{col}'].std()*6, df_final[f'{col}'].std()*7, df_final[f'{col}'].std()*8, df_final[f'{col}'].std()*9, df_final[f'{col}'].std()*10, df_final[f'{col}'].std()*11,
+          df_final[f'{col}'].std()*12, df_final[f'{col}'].std()*13]
+    sns.displot(x=df_final[f'{col}'], bins=bins)
+    print(sns)
+    plt.savefig(chart_path + r'\Histogramas\\' + f'{col} (Histograma).png')
 
 print('Regressões')
 print('% Populacao domiciliar recebendo menos do que 1/4 de um salario minimo')
