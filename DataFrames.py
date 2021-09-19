@@ -150,6 +150,7 @@ df_idosos['filtro'] = df_idosos['cod_mun'].str[2:]
 df_idosos = df_idosos[df_idosos.filtro != '0000']
 df_idosos = df_idosos.drop(columns=['filtro', '"Município";"%idosos resid como out parente"', 'mun'])
 df_idosos['idosos'] = [x.replace(',', '.') for x in df_idosos['idosos']]
+df_idosos['idosos'] = df_idosos['idosos'].replace({'...': np.nan}).astype(float)
 
 print('% da populacao renda abaixo de 1/2 Salario Minimo')
 df_05_sm = pd.read_excel(censo_path + r'Pop. Renda - 0.5 SM.xlsx', sheet_name='%')
