@@ -65,7 +65,7 @@ df_pib['populacao'] = ((df_pib['pib'] * 1000) / df_pib['pib_per_capita']).astype
 df_pib = df_pib.drop(columns=['Ag', 'RI'])
 
 toc = time()
-print(str(round((start_time - toc) / 60, 1)) + ' minutes.')
+print(str(round((toc - start_time) / 60, 1)) + ' minutes.')
 
 print('Censo 2010')
 print('Renda')
@@ -82,7 +82,45 @@ df_renda['renda_per_capita'] = [x.replace(',', '.') for x in df_renda['renda_per
 df_renda['renda_per_capita'] = df_renda['renda_per_capita'].replace({'...': np.nan}).astype(float)
 df_renda = df_renda[df_renda['renda_per_capita'] != '...']
 
-df_renda['mediana_renda'] = np.where((df_renda['renda_per_capita'] < df_renda['renda_per_capita'].median()), 1, 0) # Abaixo da Mediana
+print('População por Idade')
+df_populacao = pd.read_excel(censo_path + r'População por Idade.xlsx')
+
+df_populacao['cod_mun'] = df_populacao['"Município";"0 a 4 anos";"5 a 9 anos";"10 a 14 anos";"15 a 19 anos";"20 a 29 anos";"30 a 39 anos";"40 a 49 anos";"50 a 59 anos";"60 a 69 anos";"70 a 79 anos";"80 anos e mais";"Total"'].str[1:7]
+df_populacao[['mun', '0a4', '5a9', '10a14', '15a19', '20a29', '30a39', '40a49', '50a59', '60a69', '70a79', '80a150', 'populacao_total']] = df_populacao['"Município";"0 a 4 anos";"5 a 9 anos";"10 a 14 anos";"15 a 19 anos";"20 a 29 anos";"30 a 39 anos";"40 a 49 anos";"50 a 59 anos";"60 a 69 anos";"70 a 79 anos";"80 anos e mais";"Total"'].str.split(pat=";", expand=True)
+df_populacao = df_populacao.iloc[:-2]
+df_populacao['filtro'] = df_populacao['cod_mun'].str[2:]
+df_populacao = df_populacao[df_populacao.filtro != '0000']
+for col in ['0a4', '5a9', '10a14', '15a19', '20a29', '30a39', '40a49', '50a59', '60a69', '70a79', '80a150']:
+    df_populacao[col] = (df_populacao[col].astype(int) / df_populacao['populacao_total'].astype(int))*100
+df_populacao['populacao_sum'] = df_populacao['0a4'] + df_populacao['5a9'] + df_populacao['10a14'] + df_populacao['15a19'] + df_populacao['20a29'] + df_populacao['30a39'] + df_populacao['40a49'] + df_populacao['50a59'] + df_populacao['60a69'] + df_populacao['70a79'] + df_populacao['80a150']
+df_populacao = df_populacao.drop(columns=['filtro', 'populacao_sum', '"Município";"0 a 4 anos";"5 a 9 anos";"10 a 14 anos";"15 a 19 anos";"20 a 29 anos";"30 a 39 anos";"40 a 49 anos";"50 a 59 anos";"60 a 69 anos";"70 a 79 anos";"80 anos e mais";"Total"', 'mun'])
+df_populacao['acima50'] = df_populacao['50a59'] + df_populacao['60a69'] + df_populacao['70a79'] + df_populacao['80a150']
+df_populacao['acima60'] = df_populacao['60a69'] + df_populacao['70a79'] + df_populacao['80a150']
+df_populacao['acima70'] = df_populacao['70a79'] + df_populacao['80a150']
+
+print('Analfabetismo')
+df_analfabetismo = pd.read_excel(censo_path + r'Taxa de Analfabetismo.xlsx')
+
+df_analfabetismo['cod_mun'] = df_analfabetismo['"Município";"Taxa de analfabetismo"'].str[1:7]
+df_analfabetismo[['mun', 'analfabetismo']] = df_analfabetismo['"Município";"Taxa de analfabetismo"'].str.split(pat=";", expand=True)
+df_analfabetismo = df_analfabetismo.iloc[:-2]
+df_analfabetismo['filtro'] = df_analfabetismo['cod_mun'].str[2:]
+df_analfabetismo = df_analfabetismo[df_analfabetismo.filtro != '0000']
+df_analfabetismo = df_analfabetismo.drop(columns=['filtro', '"Município";"Taxa de analfabetismo"', 'mun'])
+df_analfabetismo['analfabetismo'] = [x.replace(',', '.') for x in df_analfabetismo['analfabetismo']]
+df_analfabetismo['analfabetismo'] = df_analfabetismo['analfabetismo'].replace({'...': np.nan}).astype(float)
+
+print('Desemprego')
+df_desemprego = pd.read_excel(censo_path + r'Taxa de Desemprego.xlsx')
+
+df_desemprego['cod_mun'] = df_desemprego['"Município";"Taxa de desemprego 16a e+"'].str[1:7]
+df_desemprego[['mun', 'desemprego']] = df_desemprego['"Município";"Taxa de desemprego 16a e+"'].str.split(pat=";", expand=True)
+df_desemprego = df_desemprego.iloc[:-2]
+df_desemprego['filtro'] = df_desemprego['cod_mun'].str[2:]
+df_desemprego = df_desemprego[df_desemprego.filtro != '0000']
+df_desemprego = df_desemprego.drop(columns=['filtro', '"Município";"Taxa de desemprego 16a e+"', 'mun'])
+df_desemprego['desemprego'] = [x.replace(',', '.') for x in df_desemprego['desemprego']]
+df_desemprego['desemprego'] = df_desemprego['desemprego'].replace({'-': np.nan, '...': np.nan}).astype(float)
 
 print('Escolaridade')
 df_escolaridade = pd.read_excel(censo_path + r'Escolaridade.xlsx', sheet_name='%')
@@ -630,6 +668,9 @@ df = df.merge(df_lixo, on='cod_mun')
 df = df.merge(df_idosos, on='cod_mun')
 df = df.merge(df_05_sm, on='cod_mun')
 df = df.merge(df_025_sm, on='cod_mun')
+df = df.merge(df_populacao, on='cod_mun')
+df = df.merge(df_analfabetismo, on='cod_mun')
+df = df.merge(df_desemprego, on='cod_mun')
 df = df.merge(df_area, on=['cod_mun', 'UF'], how='outer')
 df['mun'] = df['mun'].astype(str).str.lower().apply(unidecode)
 
@@ -643,22 +684,12 @@ df = df.sort_values(by=['mun', 'UF', 'mes'])
 df = df.dropna(subset=['level_0'])
 df.loc[df['mes'] < '2020-04-01', 'pandemia'] = 0
 df.loc[df['mes'] >= '2020-04-01', 'pandemia'] = 1
+df['densidade_pop'] = df['populacao'] / df['area_mun']
 df = df.fillna(0)
 
 cols = ['SRAG_Casos', 'SRAG_Óbitos', 'SRAG_UTI', 'SUS_Ób_Int','SUS_Ób_Res', 'SUS_Int_Int', 'SUS_Int_Res', 'CONASS']
 
 df[cols] = df[cols].astype(float)
-
-for col in cols:
-    df[f'{col}_1mm'] = (df[f'{col}']/df['populacao'])
-
-writer = pd.ExcelWriter(save_path + r'Analysis & Charts - Microrregioes.xlsx')
-df.to_excel(writer, sheet_name='Full')
-writer.close()
-
-# TODO CHECAR DADOS DE INSUMOS ENTREGUE A CADA MUNICIPIO
-# TODO CHECAR OBITOS SUS JULHO
-# TODO CHECAR RDD OR EVENT STUDY
 
 writer = pd.ExcelWriter(save_path + r'Analysis & Charts.xlsx')
 df.to_excel(writer, sheet_name='Full')
@@ -666,52 +697,29 @@ writer.close()
 
 tic = time()
 print(str(round((tic - toc) / 60, 1)) + ' minutes.')
-
-cols = ['SRAG_Casos', 'SRAG_Óbitos', 'SRAG_UTI', 'SUS_Ób_Int','SUS_Ób_Res', 'SUS_Int_Int', 'SUS_Int_Res', 'CONASS', 'populacao', 'pib']
-
+# TODO ARRUMAR MICRORREGIOES
+print('DataFrame for Analysis - Microrregiões')
+# cols = ['SRAG_Casos', 'SRAG_Óbitos', 'SRAG_UTI', 'SUS_Ób_Int','SUS_Ób_Res', 'SUS_Int_Int', 'SUS_Int_Res', 'CONASS', 'populacao', 'pib']
 # Microrregioes
-df_micro = df.groupby(['cod_mic', 'mes'])[cols].sum()
-
-df_micro['pib_per_capita'] = df_micro['pib'] / df_micro['populacao']
-df_micro['mediana'] = np.where((df_micro['pib_per_capita'] < df_micro['pib_per_capita'].median()), 1, 0)
-df_micro['25_pib'] = np.where((df_micro['pib_per_capita'] < np.percentile(df_micro['pib_per_capita'], 25)), 1, 0)
-df_micro['75_pib'] = np.where((df_micro['pib_per_capita'] >= np.percentile(df_micro['pib_per_capita'], 75)), 1, 0)
-df_micro['75-50_pib'] = np.where((df_micro['pib_per_capita'] < np.percentile(df_micro['pib_per_capita'], 75)) & (df_micro['pib_per_capita'] >= np.percentile(df_micro['pib_per_capita'], 50)), 1, 0)
-df_micro['50-25_pib'] = np.where((df_micro['pib_per_capita'] < np.percentile(df_micro['pib_per_capita'], 50)) & (df_micro['pib_per_capita'] >= np.percentile(df_micro['pib_per_capita'], 25)), 1, 0)
-df_micro['75-25_pib'] = np.where((df_micro['pib_per_capita'] < np.percentile(df_micro['pib_per_capita'], 75)) & (df_micro['pib_per_capita'] >= np.percentile(df_micro['pib_per_capita'], 25)), 1, 0)
+# df_micro = df.groupby(['cod_mic', 'mes'])[cols].sum()
+#
+# df_micro['pib_per_capita'] = df_micro['pib'] / df_micro['populacao']
+# df_micro['mediana'] = np.where((df_micro['pib_per_capita'] < df_micro['pib_per_capita'].median()), 1, 0)
+# df_micro['25_pib'] = np.where((df_micro['pib_per_capita'] < np.percentile(df_micro['pib_per_capita'], 25)), 1, 0)
+# df_micro['75_pib'] = np.where((df_micro['pib_per_capita'] >= np.percentile(df_micro['pib_per_capita'], 75)), 1, 0)
+# df_micro['75-50_pib'] = np.where((df_micro['pib_per_capita'] < np.percentile(df_micro['pib_per_capita'], 75)) & (df_micro['pib_per_capita'] >= np.percentile(df_micro['pib_per_capita'], 50)), 1, 0)
+# df_micro['50-25_pib'] = np.where((df_micro['pib_per_capita'] < np.percentile(df_micro['pib_per_capita'], 50)) & (df_micro['pib_per_capita'] >= np.percentile(df_micro['pib_per_capita'], 25)), 1, 0)
+# df_micro['75-25_pib'] = np.where((df_micro['pib_per_capita'] < np.percentile(df_micro['pib_per_capita'], 75)) & (df_micro['pib_per_capita'] >= np.percentile(df_micro['pib_per_capita'], 25)), 1, 0)
+#
+# writer = pd.ExcelWriter(save_path + r'Analysis & Charts - Microrregioes.xlsx')
+# df_micro.to_excel(writer, sheet_name='Full')
+# writer.close()
 
 print('DataFrame for Analysis - Região Metropolitana')
 df_rm = df[df['RM'] == 1]
 
-df_rm['mediana_pib'] = np.where((df_rm['pib_per_capita'] < df_rm['pib_per_capita'].median()), 1, 0)
-df_rm['25_pib'] = np.where((df_rm['pib_per_capita'] < np.percentile(df_rm['pib_per_capita'], 25)), 1, 0)
-df_rm['75_pib'] = np.where((df_rm['pib_per_capita'] >= np.percentile(df_rm['pib_per_capita'], 75)), 1, 0)
-df_rm['75-50_pib'] = np.where((df_rm['pib_per_capita'] < np.percentile(df_rm['pib_per_capita'], 75)) & (df_rm['pib_per_capita'] >= np.percentile(df_rm['pib_per_capita'], 50)), 1, 0)
-df_rm['50-25_pib'] = np.where((df_rm['pib_per_capita'] < np.percentile(df_rm['pib_per_capita'], 50)) & (df_rm['pib_per_capita'] >= np.percentile(df_rm['pib_per_capita'], 25)), 1, 0)
-df_rm['75-25_pib'] = np.where((df_rm['pib_per_capita'] < np.percentile(df_rm['pib_per_capita'], 75)) & (df_rm['pib_per_capita'] >= np.percentile(df_rm['pib_per_capita'], 25)), 1, 0)
-
-df_rm_4 = df_rm.loc[df_rm['75_pib'] == 1]
-df_rm_1 = df_rm.loc[df_rm['25_pib'] == 1]
-df_rm_3 = df_rm.loc[df_rm['75-50_pib'] == 1]
-df_rm_2 = df_rm.loc[df_rm['50-25_pib'] == 1]
-df_rm_6 = df_rm.loc[df_rm['75-25_pib'] == 1]
-df_rm_abaixo = df_rm.loc[df_rm['mediana_pib'] == 1]
-
-df_rm_6 = df_rm_6.groupby(['mes'])[cols].mean()
-df_rm_4 = df_rm_4.groupby(['mes'])[cols].mean()
-df_rm_3 = df_rm_3.groupby(['mes'])[cols].mean()
-df_rm_2 = df_rm_2.groupby(['mes'])[cols].mean()
-df_rm_1 = df_rm_1.groupby(['mes'])[cols].mean()
-df_rm_abaixo = df_rm_abaixo.groupby(['mes'])[cols].mean()
-
 writer = pd.ExcelWriter(save_path + r'Analysis & Charts - RM.xlsx')
 df_rm.to_excel(writer, sheet_name='Full')
-df_rm_6.to_excel(writer, sheet_name='75%-25%')
-df_rm_4.to_excel(writer, sheet_name='75%+')
-df_rm_3.to_excel(writer, sheet_name='75%-50%')
-df_rm_2.to_excel(writer, sheet_name='50%-25%')
-df_rm_1.to_excel(writer, sheet_name='25%-')
-df_rm_abaixo.to_excel(writer, sheet_name='Mediana-')
 writer.close()
 
 toc = time()

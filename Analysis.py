@@ -40,14 +40,19 @@ df = pd.read_excel(save_path + r'Analysis & Charts.xlsx', sheet_name='Full', ind
 # ===============================================
 print('Ajustando o DataFrame Final')
 df['mes'] = df.index
-
-df_final = df[['mes', 'UF', 'cod_mic', 'mic', 'cod_mun', 'mun', 'RM', 'pib', 'pib_per_capita', 'area_mun', 'populacao', # IBGE (Absoluto)
+# TODO COLETAR DADOS DE MORBIDADE DO SUS
+df_final = df[['mes', 'pandemia', 'UF', 'cod_mic', 'mic', 'cod_mun', 'mun', # Vari
+               'RM', 'pib', 'pib_per_capita', 'populacao', 'densidade_pop', # IBGE (Absoluto)
                'Leitos', # CNES (Absoluto)
-               'renda_per_capita', 'pop_05_sm', 'pop_025_sm', 'idosos', # Censo 2010 - Lixo (%)
-               'fundamental_inc', 'em_inc', 'em_comp', 'escola_na', 'esgoto_geral', 'fossa_septica', # Censo 2010 - Escolaridade (%)
-               'fossa_rudimentar', 'vala', 'esgoto_rio', 'esgoto_outro', 'esgoto_sem', 'agua_geral', 'poco', 'poco_fora', 'carro_pipa', # Censo 2010 - Esgoto (%)
-               'chuva_cisterna', 'chuva_outra', 'agua_rio', 'poco_aldeia', 'poco_fora_aldeia', 'agua_outra', 'limpeza', 'cacamba', 'queimado', # Censo 2010 - Água (%)
-               'enterrado', 'terreno_baldio', 'lixo_rio', 'lixo_outro', # Censo 2010 - Lixo (%)
+               'idosos', # Censo 2010 - Idosos Morando com Parente (%)
+               'desemprego', # Censo 2010 - Taxa de Desemprego (%)
+               'analfabetismo', # Censo 2010 - Taxa de Analfabetismo (%)
+               'acima50', 'acima60', 'acima70', '80a150', # Censo 2010 - População (%)
+               'renda_per_capita', 'pop_05_sm', 'pop_025_sm', # Censo 2010 - Renda (%)
+               'fundamental_inc', 'em_inc', 'em_comp', 'escola_na', # Censo 2010 - Escolaridade (%)
+               'esgoto_geral', 'fossa_septica', 'fossa_rudimentar', 'vala', 'esgoto_rio', 'esgoto_outro', 'esgoto_sem',  # Censo 2010 - Esgoto (%)
+               'agua_geral', 'poco', 'poco_fora', 'carro_pipa', 'chuva_cisterna', 'chuva_outra', 'agua_rio', 'poco_aldeia', 'poco_fora_aldeia', 'agua_outra',  # Censo 2010 - Água (%)
+               'limpeza', 'cacamba', 'queimado', 'enterrado', 'terreno_baldio', 'lixo_rio', 'lixo_outro', # Censo 2010 - Lixo (%)
                'SRAG_Casos', 'SRAG_Óbitos', 'SRAG_UTI', # SIVEP-Gripe (Absoluto)
                'SUS_Ób_Int', 'SUS_Ób_Res', 'SUS_Int_Int', 'SUS_Int_Res', # DataSUS (Absoluto)
                'CONASS', # CONASS (Absoluto)
@@ -64,20 +69,25 @@ df_final['mediana_log_renda'] = np.where((df_final['log_renda'] <= df_final['log
 df_final['mediana_log_pib'] = np.where((df_final['log_pib'] <= df_final['log_pib'].median()), 1, 0) # Dummy - se o município se encontra abaixo da mediana do Logaritmo do Produto Interno Bruto per Capita
 
 for col in ['SRAG_Casos', 'SRAG_Óbitos', 'SRAG_UTI', 'SUS_Ób_Int', 'SUS_Ób_Res', 'SUS_Int_Int', 'SUS_Int_Res', 'CONASS']:
-    df_final[f'{col}_pop'] = (df_final[col] / df_final['populacao'])*10000 # Y por 10.000 Habitantes
+    df_final[f'{col}_pop'] = (df_final[col] / df_final['populacao'])*100000 # Y por 100.000 Habitantes
 
 print('Descrição das Variáveis') # TODO ESCOLHER VARIÁVEIS PARA ANALISAR - OLHAR RM
-for col in df_final.columns:
+df_pre = df_final.loc[: '2020-02-01']
+df_pos = df_final.loc['2020-03-01':]
+# TODO ANALISAR VARIVEIS TABELA BRUCE
+
+for col in ['SRAG_Casos_pop', 'SRAG_Óbitos_pop', 'SRAG_UTI_pop', 'SUS_Ób_Int_pop', 'SUS_Ób_Res_pop', 'SUS_Int_Int_pop', 'SUS_Int_Res_pop', 'CONASS_pop']:
     try:
-        print(round(df_final[col].describe(), 2))
+        print(round(df_pre[col].describe(), 2))
     except TypeError:
         continue
+
 
 # ===============================================
 # ===== Analysis - Regressions ==================
 # ===============================================
 print('Distribuições das Variáveis Dependentes')
-for col in ['SRAG_Casos', 'SRAG_UTI', 'SRAG_Óbitos', 'SUS_Ób_Int', 'SUS_Ób_Res', 'SUS_Int_Int', 'SUS_Int_Res', 'CONASS',
+for col in [ # 'SRAG_Casos', 'SRAG_UTI', 'SRAG_Óbitos', 'SUS_Ób_Int', 'SUS_Ób_Res', 'SUS_Int_Int', 'SUS_Int_Res', 'CONASS',
             'SRAG_Casos_pop', 'SRAG_Óbitos_pop', 'SRAG_UTI_pop', 'SUS_Ób_Int_pop', 'SUS_Ób_Res_pop', 'SUS_Int_Int_pop', 'SUS_Int_Res_pop', 'CONASS_pop']:
     bins=[df_final[f'{col}'].std()/2,  df_final[f'{col}'].std(), df_final[f'{col}'].std()*2, df_final[f'{col}'].std()*3, df_final[f'{col}'].std()*4, df_final[f'{col}'].std()*5,
           df_final[f'{col}'].std()*6, df_final[f'{col}'].std()*7, df_final[f'{col}'].std()*8, df_final[f'{col}'].std()*9, df_final[f'{col}'].std()*10, df_final[f'{col}'].std()*11,
@@ -87,21 +97,22 @@ for col in ['SRAG_Casos', 'SRAG_UTI', 'SRAG_Óbitos', 'SUS_Ób_Int', 'SUS_Ób_Re
     plt.savefig(chart_path + r'\Histogramas\\' + f'{col} (Histograma).png')
 
 print('Regressões')
-for y in ['SRAG_Casos', 'SRAG_Óbitos', 'SRAG_UTI', 'SUS_Ób_Int', 'SUS_Ób_Res', 'SUS_Int_Int', 'SUS_Int_Res', 'CONASS', # Y em Absoluto
+for y in [ # 'SRAG_Casos', 'SRAG_Óbitos', 'SRAG_UTI', 'SUS_Ób_Int', 'SUS_Ób_Res', 'SUS_Int_Int', 'SUS_Int_Res', 'CONASS', # Y em Absoluto
           'SRAG_Casos_pop', 'SRAG_Óbitos_pop', 'SRAG_UTI_pop', 'SUS_Ób_Int_pop', 'SUS_Ób_Res_pop', 'SUS_Int_Int_pop', 'SUS_Int_Res_pop', 'CONASS_pop']: # Y por 10.000 Habitantes
     writer = pd.ExcelWriter(regression_path + f'{y} (OLS).xlsx')
 
-    for x in ['log_renda', 'abaixo_log_renda', 'acima_log_renda', 'mediana_log_renda', # Renda per Capita
-              'log_pib', 'abaixo_log_pib',  'acima_log_pib', 'mediana_log_pib', # Produto Interno Bruto per Capita
+    for x in ['log_renda', 'mediana_log_renda', # Renda per Capita - 'abaixo_log_renda', 'acima_log_renda',
+              'log_pib', 'mediana_log_pib', # Produto Interno Bruto per Capita - 'abaixo_log_pib',  'acima_log_pib',
               'pop_05_sm', 'pop_025_sm', # Censo 2010 - População de Baixa Renda (%)
-              'Leitos']: # Leitos Absoluto - colocar em T-1 ???
-        ols_reg = ols(formula=f'{y} ~ area_mun + populacao + UF + RM + log_pib +' # IBGE
+              # 'Leitos'
+              ]: # Leitos Absoluto - colocar em T-1 ???
+        ols_reg = ols(formula=f'{y} ~ area_mun + populacao + UF + RM +' # IBGE
                               f'idosos +' # Censo 2010 - Idosos (%)
-                              f'fundamental_inc + em_inc + em_comp + escola_na +' # Censo 2010 - Escolaridade (%)
-                              f'esgoto_geral + fossa_septica + fossa_rudimentar + vala + esgoto_rio + esgoto_outro + esgoto_sem +' # Censo 2010 - Esgoto (%)
-                              f'agua_geral + poco + poco_fora + carro_pipa + chuva_cisterna + chuva_outra + agua_rio + poco_aldeia + poco_fora_aldeia + agua_outra +' # Censo 2010 - Água (%)
-                              f'limpeza + cacamba + queimado + enterrado + terreno_baldio + lixo_rio + lixo_outro +' # Censo 2010 - Lixo (%)
-                              f'{x}*mes', # IBGE - Proxy da Renda vs Mês
+                              f'em_comp +' # Censo 2010 - Escolaridade (%) - Ensino Médio Completo
+                              f'esgoto_geral +' # Censo 2010 - Esgoto (%) - Rede Geral de Esgoto
+                              f'agua_geral +' # Censo 2010 - Água (%) - Rede Geral de Água
+                              f'limpeza +' # Censo 2010 - Lixo (%) - Serviço de Limpeza
+                              f'{x}*mes', # IBGE - Proxy da Renda * Dummy de Pandemia
                   data=df_final).fit()
 
         ols_reg = pd.read_html(ols_reg.summary().tables[1].as_html(), header=0, index_col=0)[0]
