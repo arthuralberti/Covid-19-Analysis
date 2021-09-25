@@ -71,16 +71,99 @@ df_final['mediana_log_pib'] = np.where((df_final['log_pib'] <= df_final['log_pib
 for col in ['SRAG_Casos', 'SRAG_Óbitos', 'SRAG_UTI', 'SUS_Ób_Int', 'SUS_Ób_Res', 'SUS_Int_Int', 'SUS_Int_Res', 'CONASS']:
     df_final[f'{col}_pop'] = (df_final[col] / df_final['populacao'])*100000 # Y por 100.000 Habitantes
 
-print('Descrição das Variáveis') # TODO ESCOLHER VARIÁVEIS PARA ANALISAR - OLHAR RM
-df_pre = df_final.loc[: '2020-02-01']
-df_pos = df_final.loc['2020-03-01':]
-# TODO ANALISAR VARIVEIS TABELA BRUCE
+print('Descrição das Variáveis')
+writer = pd.ExcelWriter(save_path + r'Descriptive Analysis.xlsx')
+print('Full - Pré')
+df_descriptive = df_final.loc[: '2020-02-01']
+aux = round(df_descriptive[['RM', 'pib', 'pib_per_capita', 'populacao', 'densidade_pop', 'Leitos', 'idosos', 'desemprego',
+            'analfabetismo', 'acima50', 'acima60', 'acima70', '80a150', 'renda_per_capita', 'pop_05_sm', 'pop_025_sm',
+            'fundamental_inc', 'em_inc', 'em_comp', 'escola_na', 'esgoto_geral',
+            'fossa_septica', 'fossa_rudimentar', 'vala', 'esgoto_rio',
+            'esgoto_outro', 'esgoto_sem', 'agua_geral', 'poco', 'poco_fora',
+            'carro_pipa', 'chuva_cisterna', 'chuva_outra', 'agua_rio',
+            'poco_aldeia', 'poco_fora_aldeia', 'agua_outra', 'limpeza', 'cacamba',
+            'queimado', 'enterrado', 'terreno_baldio', 'lixo_rio', 'lixo_outro', 'log_renda', 'log_pib',
+            'abaixo_log_renda', 'abaixo_log_pib', 'acima_log_renda',
+            'acima_log_pib', 'mediana_log_renda', 'mediana_log_pib',
+            'SRAG_Casos_pop', 'SRAG_Óbitos_pop', 'SRAG_UTI_pop', 'SUS_Ób_Int_pop', 'SUS_Ób_Res_pop', 'SUS_Int_Int_pop', 'SUS_Int_Res_pop', 'CONASS_pop']].describe(), 2)
+aux.to_excel(writer, f'Full - Pré')
 
-for col in ['SRAG_Casos_pop', 'SRAG_Óbitos_pop', 'SRAG_UTI_pop', 'SUS_Ób_Int_pop', 'SUS_Ób_Res_pop', 'SUS_Int_Int_pop', 'SUS_Int_Res_pop', 'CONASS_pop']:
-    try:
-        print(round(df_pre[col].describe(), 2))
-    except TypeError:
-        continue
+print('Abaixo de 25% - Pré')
+abaixo = df_descriptive.loc[df_descriptive['abaixo_log_renda'] == 1]
+aux = round(abaixo[['RM', 'pib', 'pib_per_capita', 'populacao', 'densidade_pop', 'Leitos', 'idosos', 'desemprego',
+            'analfabetismo', 'acima50', 'acima60', 'acima70', '80a150', 'renda_per_capita', 'pop_05_sm', 'pop_025_sm',
+            'fundamental_inc', 'em_inc', 'em_comp', 'escola_na', 'esgoto_geral',
+            'fossa_septica', 'fossa_rudimentar', 'vala', 'esgoto_rio',
+            'esgoto_outro', 'esgoto_sem', 'agua_geral', 'poco', 'poco_fora',
+            'carro_pipa', 'chuva_cisterna', 'chuva_outra', 'agua_rio',
+            'poco_aldeia', 'poco_fora_aldeia', 'agua_outra', 'limpeza', 'cacamba',
+            'queimado', 'enterrado', 'terreno_baldio', 'lixo_rio', 'lixo_outro', 'log_renda', 'log_pib',
+            'abaixo_log_renda', 'abaixo_log_pib', 'acima_log_renda',
+            'acima_log_pib', 'mediana_log_renda', 'mediana_log_pib',
+            'SRAG_Casos_pop', 'SRAG_Óbitos_pop', 'SRAG_UTI_pop', 'SUS_Ób_Int_pop', 'SUS_Ób_Res_pop', 'SUS_Int_Int_pop', 'SUS_Int_Res_pop', 'CONASS_pop']].describe(), 2)
+aux.to_excel(writer, f'Abaixo 25% - Pré')
+
+print('Acima de 25% - Pré')
+acima = df_descriptive.loc[df_descriptive['abaixo_log_renda'] == 0]
+aux = round(acima[['RM', 'pib', 'pib_per_capita', 'populacao', 'densidade_pop', 'Leitos', 'idosos', 'desemprego',
+            'analfabetismo', 'acima50', 'acima60', 'acima70', '80a150', 'renda_per_capita', 'pop_05_sm', 'pop_025_sm',
+            'fundamental_inc', 'em_inc', 'em_comp', 'escola_na', 'esgoto_geral',
+            'fossa_septica', 'fossa_rudimentar', 'vala', 'esgoto_rio',
+            'esgoto_outro', 'esgoto_sem', 'agua_geral', 'poco', 'poco_fora',
+            'carro_pipa', 'chuva_cisterna', 'chuva_outra', 'agua_rio',
+            'poco_aldeia', 'poco_fora_aldeia', 'agua_outra', 'limpeza', 'cacamba',
+            'queimado', 'enterrado', 'terreno_baldio', 'lixo_rio', 'lixo_outro', 'log_renda', 'log_pib',
+            'abaixo_log_renda', 'abaixo_log_pib', 'acima_log_renda',
+            'acima_log_pib', 'mediana_log_renda', 'mediana_log_pib',
+            'SRAG_Casos_pop', 'SRAG_Óbitos_pop', 'SRAG_UTI_pop', 'SUS_Ób_Int_pop', 'SUS_Ób_Res_pop', 'SUS_Int_Int_pop', 'SUS_Int_Res_pop', 'CONASS_pop']].describe(), 2)
+aux.to_excel(writer, f'Acima 25% - Pré')
+
+print('Full - Pós')
+df_descriptive = df_final.loc['2020-03-01':]
+aux = round(df_descriptive[['RM', 'pib', 'pib_per_capita', 'populacao', 'densidade_pop', 'Leitos', 'idosos', 'desemprego',
+            'analfabetismo', 'acima50', 'acima60', 'acima70', '80a150', 'renda_per_capita', 'pop_05_sm', 'pop_025_sm',
+            'fundamental_inc', 'em_inc', 'em_comp', 'escola_na', 'esgoto_geral',
+            'fossa_septica', 'fossa_rudimentar', 'vala', 'esgoto_rio',
+            'esgoto_outro', 'esgoto_sem', 'agua_geral', 'poco', 'poco_fora',
+            'carro_pipa', 'chuva_cisterna', 'chuva_outra', 'agua_rio',
+            'poco_aldeia', 'poco_fora_aldeia', 'agua_outra', 'limpeza', 'cacamba',
+            'queimado', 'enterrado', 'terreno_baldio', 'lixo_rio', 'lixo_outro', 'log_renda', 'log_pib',
+            'abaixo_log_renda', 'abaixo_log_pib', 'acima_log_renda',
+            'acima_log_pib', 'mediana_log_renda', 'mediana_log_pib',
+            'SRAG_Casos_pop', 'SRAG_Óbitos_pop', 'SRAG_UTI_pop', 'SUS_Ób_Int_pop', 'SUS_Ób_Res_pop', 'SUS_Int_Int_pop', 'SUS_Int_Res_pop', 'CONASS_pop']].describe(), 2)
+aux.to_excel(writer, f'Full - Pós')
+
+print('Abaixo de 25% - Pós')
+abaixo = df_descriptive.loc[df_descriptive['abaixo_log_renda'] == 1]
+aux = round(abaixo[['RM', 'pib', 'pib_per_capita', 'populacao', 'densidade_pop', 'Leitos', 'idosos', 'desemprego',
+            'analfabetismo', 'acima50', 'acima60', 'acima70', '80a150', 'renda_per_capita', 'pop_05_sm', 'pop_025_sm',
+            'fundamental_inc', 'em_inc', 'em_comp', 'escola_na', 'esgoto_geral',
+            'fossa_septica', 'fossa_rudimentar', 'vala', 'esgoto_rio',
+            'esgoto_outro', 'esgoto_sem', 'agua_geral', 'poco', 'poco_fora',
+            'carro_pipa', 'chuva_cisterna', 'chuva_outra', 'agua_rio',
+            'poco_aldeia', 'poco_fora_aldeia', 'agua_outra', 'limpeza', 'cacamba',
+            'queimado', 'enterrado', 'terreno_baldio', 'lixo_rio', 'lixo_outro', 'log_renda', 'log_pib',
+            'abaixo_log_renda', 'abaixo_log_pib', 'acima_log_renda',
+            'acima_log_pib', 'mediana_log_renda', 'mediana_log_pib',
+            'SRAG_Casos_pop', 'SRAG_Óbitos_pop', 'SRAG_UTI_pop', 'SUS_Ób_Int_pop', 'SUS_Ób_Res_pop', 'SUS_Int_Int_pop', 'SUS_Int_Res_pop', 'CONASS_pop']].describe(), 2)
+aux.to_excel(writer, f'Abaixo 25% - Pós')
+
+print('Acima de 25% - Pós')
+acima = df_descriptive.loc[df_descriptive['abaixo_log_renda'] == 0]
+aux = round(acima[['RM', 'pib', 'pib_per_capita', 'populacao', 'densidade_pop', 'Leitos', 'idosos', 'desemprego',
+            'analfabetismo', 'acima50', 'acima60', 'acima70', '80a150', 'renda_per_capita', 'pop_05_sm', 'pop_025_sm',
+            'fundamental_inc', 'em_inc', 'em_comp', 'escola_na', 'esgoto_geral',
+            'fossa_septica', 'fossa_rudimentar', 'vala', 'esgoto_rio',
+            'esgoto_outro', 'esgoto_sem', 'agua_geral', 'poco', 'poco_fora',
+            'carro_pipa', 'chuva_cisterna', 'chuva_outra', 'agua_rio',
+            'poco_aldeia', 'poco_fora_aldeia', 'agua_outra', 'limpeza', 'cacamba',
+            'queimado', 'enterrado', 'terreno_baldio', 'lixo_rio', 'lixo_outro', 'log_renda', 'log_pib',
+            'abaixo_log_renda', 'abaixo_log_pib', 'acima_log_renda',
+            'acima_log_pib', 'mediana_log_renda', 'mediana_log_pib',
+            'SRAG_Casos_pop', 'SRAG_Óbitos_pop', 'SRAG_UTI_pop', 'SUS_Ób_Int_pop', 'SUS_Ób_Res_pop', 'SUS_Int_Int_pop', 'SUS_Int_Res_pop', 'CONASS_pop']].describe(), 2)
+aux.to_excel(writer, f'Acima 25% - Pós')
+
+writer.save()
 
 
 # ===============================================
@@ -96,23 +179,24 @@ for col in [ # 'SRAG_Casos', 'SRAG_UTI', 'SRAG_Óbitos', 'SUS_Ób_Int', 'SUS_Ób
     print(sns)
     plt.savefig(chart_path + r'\Histogramas\\' + f'{col} (Histograma).png')
 
-print('Regressões')
+print('Regressões') # TODO - Controles de Cor e Sexo?
 for y in [ # 'SRAG_Casos', 'SRAG_Óbitos', 'SRAG_UTI', 'SUS_Ób_Int', 'SUS_Ób_Res', 'SUS_Int_Int', 'SUS_Int_Res', 'CONASS', # Y em Absoluto
           'SRAG_Casos_pop', 'SRAG_Óbitos_pop', 'SRAG_UTI_pop', 'SUS_Ób_Int_pop', 'SUS_Ób_Res_pop', 'SUS_Int_Int_pop', 'SUS_Int_Res_pop', 'CONASS_pop']: # Y por 10.000 Habitantes
     writer = pd.ExcelWriter(regression_path + f'{y} (OLS).xlsx')
 
-    for x in ['log_renda', 'mediana_log_renda', # Renda per Capita - 'abaixo_log_renda', 'acima_log_renda',
-              'log_pib', 'mediana_log_pib', # Produto Interno Bruto per Capita - 'abaixo_log_pib',  'acima_log_pib',
+    for x in ['log_renda', 'mediana_log_renda', 'abaixo_log_renda', 'acima_log_renda', # Renda per Capita
+              'log_pib', 'mediana_log_pib', 'abaixo_log_pib',  'acima_log_pib', # Produto Interno Bruto per Capita
               'pop_05_sm', 'pop_025_sm', # Censo 2010 - População de Baixa Renda (%)
-              # 'Leitos'
-              ]: # Leitos Absoluto - colocar em T-1 ???
-        ols_reg = ols(formula=f'{y} ~ area_mun + populacao + UF + RM +' # IBGE
-                              f'idosos +' # Censo 2010 - Idosos (%)
+              ]: # TODO - Leitos Absoluto - colocar em T-1 ???
+        ols_reg = ols(formula=f'{y} ~ densidade_pop + populacao + UF + RM +' # IBGE - TODO URBAN POPULATION RATE - Controle de mês?
+                              f'idosos + acima50 +' # Censo 2010 - Idosos (%)
+                              f'analfabetismo +' # Censo 2010 - Analfabetismo (%)
+                              f'desemprego +' # Censo 2010 - Desemprego (%)
                               f'em_comp +' # Censo 2010 - Escolaridade (%) - Ensino Médio Completo
                               f'esgoto_geral +' # Censo 2010 - Esgoto (%) - Rede Geral de Esgoto
                               f'agua_geral +' # Censo 2010 - Água (%) - Rede Geral de Água
                               f'limpeza +' # Censo 2010 - Lixo (%) - Serviço de Limpeza
-                              f'{x}*mes', # IBGE - Proxy da Renda * Dummy de Pandemia
+                              f'{x}*pandemia', # IBGE - Proxy da Renda * Dummy de Pandemia - TODO TROCAR POR DUMMY DE MÊS
                   data=df_final).fit()
 
         ols_reg = pd.read_html(ols_reg.summary().tables[1].as_html(), header=0, index_col=0)[0]
