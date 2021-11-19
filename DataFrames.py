@@ -35,7 +35,7 @@ print('IBGE')
 print('Área')
 df_area = pd.read_excel(read_path + r'Area_2020.xls')
 
-df_area = df_area.drop(columns={'ID', 'CD_GCUF', 'NM_UF', 'NM_MUN_2020'}).rename(columns={'NM_UF_SIGLA': 'UF', 'CD_GCMUN': 'cod_mun', 'AR_MUN_2020': 'area_mun'})
+df_area = df_area.drop(columns={'ID', 'CD_GCUF', 'NM_UF', 'NM_MUN_2020'}).rename(columns={'NM_UF_SIGLA': 'UF', 'CD_GCMUN': 'cod_mun', 'AR_MUN_2020': 'area'})
 df_area['cod_mun'] = df_area['cod_mun'].dropna().astype(int).astype(str).str[:-1]
 
 print('PIB')
@@ -50,11 +50,12 @@ cols = {'Sigla da Unidade da Federação': 'UF',
         'Produto Interno Bruto, \na preços correntes\n(R$ 1.000)': 'pib',
         'Produto Interno Bruto per capita, \na preços correntes\n(R$ 1,00)': 'pib_per_capita',
         'Atividade com maior valor adicionado bruto': 'atividade'}
-# TODO CRIAR DUMMIES DE ATIVIDADE
+
 df_pib = df_pib[df_pib['Ano'] >= 2018]
 df_pib = df_pib.drop(df_pib.columns.difference(cols), axis=1)
 df_pib = df_pib.rename(columns=cols)
-
+df_pib['atividade'].loc[df_pib['atividade'] != 'Eletricidade e gás, água, esgoto, atividades de gestão de resíduos e descontaminação'] = 0
+df_pib['atividade'].loc[df_pib['atividade'] == 'Eletricidade e gás, água, esgoto, atividades de gestão de resíduos e descontaminação'] = 1
 df_pib['RM'] = df_pib['RM'].str[:2]
 df_pib['Ag'] = np.where((df_pib['RM'] == 'Ag'), 1, 0)
 df_pib['RI'] = np.where((df_pib['RM'] == 'RI'), 1, 0)
@@ -360,6 +361,7 @@ mun = {'couto de magalhaes': 'couto magalhaes',
        'parana': 'parauna',
        'dona euzebia': 'dona eusebia',
        'campo de santana': 'cachoeira dos indios'}
+
 estado = {'Acre': 'AC',
           'Alagoas': 'AL',
           'Amapá': 'AP',
@@ -453,6 +455,7 @@ print(str(round((tic - toc) / 60, 1)) + ' minutes.')
 print('CNES')
 meses_19 = {'Dezembro': '12-01-2019', 'Novembro': '11-01-2019', 'Outubro': '10-01-2019', 'Setembro': '09-01-2019', 'Agosto': '08-01-2019', 'Julho': '07-01-2019',
             'Junho': '06-01-2019', 'Maio': '05-01-2019', 'Abril': '04-01-2019', 'Março': '03-01-2019', 'Fevereiro': '02-01-2019', 'Janeiro': '01-01-2019'}
+
 meses_20 = {'Dezembro': '12-01-2020', 'Novembro': '11-01-2020', 'Outubro': '10-01-2020', 'Setembro': '09-01-2020', 'Agosto': '08-01-2020', 'Julho': '07-01-2020',
             'Junho': '06-01-2020', 'Maio': '05-01-2020', 'Abril': '04-01-2020', 'Março': '03-01-2020', 'Fevereiro': '02-01-2020', 'Janeiro': '01-01-2020'}
 
@@ -641,6 +644,7 @@ df_sus['SUS_Ób_Res'] = df_sus['SUS_Ób_Res_19'].astype(int) + df_sus['SUS_Ób_R
 df_sus['SUS_Int_Int'] = df_sus['SUS_Int_Int_19'].astype(int) + df_sus['SUS_Int_Int_20'].astype(int)
 df_sus['SUS_Int_Res'] = df_sus['SUS_Int_Res_19'].astype(int) + df_sus['SUS_Int_Res_20'].astype(int)
 df_sus = df_sus.drop(columns={'SUS_Ób_Int_19', 'SUS_Ób_Int_20', 'SUS_Ób_Res_19', 'SUS_Ób_Res_20', 'SUS_Int_Int_19', 'SUS_Int_Int_20', 'SUS_Int_Res_19', 'SUS_Int_Res_20'})
+df_sus = df_sus.replace({0: np.nan})
 
 tic = time()
 print(str(round((tic - toc) / 60, 1)) + ' minutes.')
@@ -682,47 +686,53 @@ df = df.merge(df_conass, on=['mes', 'mun', 'UF'], how='outer')
 df['mes'] = pd.to_datetime(df['mes'])
 df = df.sort_values(by=['mun', 'UF', 'mes'])
 df = df.dropna(subset=['level_0'])
-df.loc[df['mes'] < '2020-04-01', 'pandemia'] = 0
-df.loc[df['mes'] >= '2020-04-01', 'pandemia'] = 1
-df['densidade_pop'] = df['populacao'] / df['area_mun']
-df = df.fillna(0)
+df['densidade_pop'] = df['populacao'] / df['area']
 
 cols = ['SRAG_Casos', 'SRAG_Óbitos', 'SRAG_UTI', 'SUS_Ób_Int','SUS_Ób_Res', 'SUS_Int_Int', 'SUS_Int_Res', 'CONASS']
 
 df[cols] = df[cols].astype(float)
 
+tic = time()
+print(str(round((tic - toc) / 60, 1)) + ' minutes.')
+
+print('DataFrame for Analysis - Microrregiões')
+df_micro = df
+
+cols = ['limpeza', 'acima70', 'idosos', 'analfabetismo', 'desemprego', 'agua_geral', 'esgoto_geral', 'em_comp',
+        'pop_025_sm', 'pop_05_sm']
+
+cols_2 = ['SRAG_Casos', 'SRAG_Óbitos', 'SRAG_UTI', 'SUS_Ób_Int','SUS_Ób_Res', 'SUS_Int_Int', 'SUS_Int_Res', 'CONASS',
+          'limpeza', 'acima70', 'idosos', 'analfabetismo', 'desemprego', 'agua_geral', 'esgoto_geral', 'em_comp',
+          'pop_025_sm', 'pop_05_sm', 'pib', 'populacao', 'area', 'renda']
+
+cols_3 = ['SRAG_Casos', 'SRAG_Óbitos', 'SRAG_UTI', 'SUS_Ób_Int','SUS_Ób_Res', 'SUS_Int_Int', 'SUS_Int_Res', 'CONASS',
+          'limpeza', 'acima70', 'idosos', 'analfabetismo', 'desemprego', 'agua_geral', 'esgoto_geral', 'em_comp',
+          'pop_025_sm', 'pop_05_sm', 'renda', 'pib']
+
+for col in cols:
+    df_micro[f'{col}'] = df_micro[f'{col}'] * df_micro['populacao']
+df_micro['renda'] = df_micro['renda_per_capita'] * df_micro['populacao']
+
+df_micro = df.groupby(['cod_mic', 'mes', 'UF'])[cols_2].sum()
+
+for col in cols_3:
+    df_micro[f'{col}'] = df_micro[f'{col}'] / df_micro['populacao']
+df_micro['densidade'] = df_micro['populacao'] / df_micro['area']
+df_micro = df_micro.reset_index()
+
+toc = time()
+print(str(round((toc - tic) / 60, 1)) + ' minutes.')
+
+print('Salvando os DataFrames')
 writer = pd.ExcelWriter(save_path + r'Analysis & Charts.xlsx')
 df.to_excel(writer, sheet_name='Full')
 writer.close()
 
-tic = time()
-print(str(round((tic - toc) / 60, 1)) + ' minutes.')
-# TODO ARRUMAR MICRORREGIOES
-print('DataFrame for Analysis - Microrregiões')
-# cols = ['SRAG_Casos', 'SRAG_Óbitos', 'SRAG_UTI', 'SUS_Ób_Int','SUS_Ób_Res', 'SUS_Int_Int', 'SUS_Int_Res', 'CONASS', 'populacao', 'pib']
-# Microrregioes
-# df_micro = df.groupby(['cod_mic', 'mes'])[cols].sum()
-#
-# df_micro['pib_per_capita'] = df_micro['pib'] / df_micro['populacao']
-# df_micro['mediana'] = np.where((df_micro['pib_per_capita'] < df_micro['pib_per_capita'].median()), 1, 0)
-# df_micro['25_pib'] = np.where((df_micro['pib_per_capita'] < np.percentile(df_micro['pib_per_capita'], 25)), 1, 0)
-# df_micro['75_pib'] = np.where((df_micro['pib_per_capita'] >= np.percentile(df_micro['pib_per_capita'], 75)), 1, 0)
-# df_micro['75-50_pib'] = np.where((df_micro['pib_per_capita'] < np.percentile(df_micro['pib_per_capita'], 75)) & (df_micro['pib_per_capita'] >= np.percentile(df_micro['pib_per_capita'], 50)), 1, 0)
-# df_micro['50-25_pib'] = np.where((df_micro['pib_per_capita'] < np.percentile(df_micro['pib_per_capita'], 50)) & (df_micro['pib_per_capita'] >= np.percentile(df_micro['pib_per_capita'], 25)), 1, 0)
-# df_micro['75-25_pib'] = np.where((df_micro['pib_per_capita'] < np.percentile(df_micro['pib_per_capita'], 75)) & (df_micro['pib_per_capita'] >= np.percentile(df_micro['pib_per_capita'], 25)), 1, 0)
-#
-# writer = pd.ExcelWriter(save_path + r'Analysis & Charts - Microrregioes.xlsx')
-# df_micro.to_excel(writer, sheet_name='Full')
-# writer.close()
-
-print('DataFrame for Analysis - Região Metropolitana')
-df_rm = df[df['RM'] == 1]
-
-writer = pd.ExcelWriter(save_path + r'Analysis & Charts - RM.xlsx')
-df_rm.to_excel(writer, sheet_name='Full')
+writer = pd.ExcelWriter(save_path + r'Analysis & Charts - Microrregioes.xlsx')
+df_micro.to_excel(writer, sheet_name='Full')
 writer.close()
 
-toc = time()
-print(str(round((toc - tic) / 60, 1)) + ' minutes.')
+tic = time()
+print(str(round((tic - toc) / 60, 1)) + ' minutes.')
 
 print('It took ' + str(round((time() - start_time) / 60, 1)) + ' minutes to run the routine.')
