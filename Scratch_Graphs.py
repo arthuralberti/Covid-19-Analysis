@@ -287,7 +287,7 @@ ax.plot(aux3.index, aux3['CONASS'], color='red', linewidth=linewidth, label='1o 
 ax.plot(aux1.index, aux1['CONASS'], color='orangered', linewidth=linewidth, label='1o Tercil - Renda per capita')
 ax.plot(aux.index, aux['CONASS'], color='darkorange', linewidth=linewidth, label='Abaixo da Mediana - Renda per capita')
 ax.plot(aux2.index, aux2['CONASS'], color='mediumseagreen', linewidth=linewidth, label='2o Tercil - Renda per capita')
-ax.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
+ax.xaxis.set_major_locator(mdates.MonthLocator(interval=1))
 ax.xaxis.set_major_formatter(mdates.DateFormatter('%b/%Y'))
 ax.grid(True, which='both', linestyle='--', alpha=0.5, zorder=0)
 ax.legend(loc='upper left', frameon=False, prop={'size': fontsize, 'weight': 'bold'})

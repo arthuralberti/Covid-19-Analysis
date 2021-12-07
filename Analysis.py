@@ -64,6 +64,14 @@ for col in ['SRAG_Casos', 'SRAG_Óbitos', 'SRAG_UTI', 'SUS_Ób_Int', 'SUS_Ób_Re
 
 df_micro_final.to_excel(save_path + r'DataFrame Final.xlsx')
 
+print('Analysis')
+aux = df_micro_final[df_micro_final['pandemia'] == 1]
+print((2.505/aux['CONASS'].mean())*100)
+print((2.018/aux['SUS_Ób_Int'].mean())*100)
+aux = df_micro_final[df_micro_final['pandemia'] == 0]
+print((2.505/aux['CONASS'].mean())*100)
+print((2.018/aux['SUS_Ób_Int'].mean())*100)
+
 print('Descrição das Variáveis')
 writer = pd.ExcelWriter(save_path + r'Descriptive Analysis - Microrregioes.xlsx')
 print('Full - Pré')
